@@ -17,5 +17,4 @@ module.exports = {
   },
   testRegex: 'src.*(\\.|/)(test|spec)\\.ts$',
   moduleFileExtensions: ['js', 'ts', 'json', 'node'],
-  testResultsProcessor: 'jest-html-reporter',
 };
