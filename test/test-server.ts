@@ -1,11 +1,15 @@
 import http from 'http';
 import getPort from 'get-port';
 
-export default async function createTestServer() {
-  const instance = http.createServer((_, res) => {
-    res.writeHead(200);
-    res.end();
-  });
+const defaultRequestListener: http.RequestListener = (_, res) => {
+  res.writeHead(200);
+  res.end();
+};
+
+export default async function createTestServer(
+  requestListener: http.RequestListener = defaultRequestListener,
+) {
+  const instance = http.createServer(requestListener);
 
   const hostname = 'localhost' as string;
   const port = await getPort();
@@ -24,9 +28,27 @@ export default async function createTestServer() {
     });
   };
 
-  const close = () => instance.close();
+  const close = () =>
+    new Promise((resolve, reject) => {
+      instance.close((error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
 
-  afterEach(close);
+        resolve();
+      });
+    });
+
+  const runTask = async <T>(task: () => Promise<T> | T): Promise<T> => {
+    await start();
+
+    const response = await task();
+
+    await close();
+
+    return response;
+  };
 
   return {
     instance,
@@ -35,6 +57,7 @@ export default async function createTestServer() {
     host,
     start,
     close,
+    runTask,
     url,
   };
 }

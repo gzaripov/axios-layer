@@ -1,3 +1,4 @@
+import Axios, { AxiosRequestConfig } from 'axios';
 import { createAxiosMock } from '../test/axios-mock';
 import createTestServer from '../test/test-server';
 import { wrapAxios } from './wrap';
@@ -57,8 +58,8 @@ describe('Axios Wrap', () => {
   });
 
   it('should call provided layer only once for one request when go to real server', async () => {
-    const server = await createTestServer();
-    const axios = createAxiosMock();
+    const testServer = await createTestServer();
+    const axiosInstance = Axios.create();
 
     const order: number[] = [];
 
@@ -74,16 +75,63 @@ describe('Axios Wrap', () => {
       return makeRequest();
     });
 
-    axios.mock.onGet('/test').reply(200);
+    wrapAxios(axiosInstance, layerOne);
+    wrapAxios(axiosInstance, layerTwo);
 
-    wrapAxios(axios, layerOne);
-    wrapAxios(axios, layerTwo);
-
-    await server.start();
-    await axios.get('/test');
+    await testServer.runTask(async () => {
+      await axiosInstance.get(`${testServer.url}/test`);
+    });
 
     expect(order).toEqual([2, 1]);
     expect(layerOne).toHaveBeenCalledTimes(1);
     expect(layerTwo).toHaveBeenCalledTimes(1);
+  });
+
+  it('should work with data in post request', async () => {
+    const axios = createAxiosMock();
+
+    axios.mock.onPost('/test').reply((config: AxiosRequestConfig) => {
+      return [200, `${config.data}-three`];
+    });
+
+    const layer = jest.fn((makeRequest, config: AxiosRequestConfig) => {
+      return makeRequest({
+        ...config,
+        data: `${config.data}-two`,
+      });
+    });
+
+    wrapAxios(axios, layer);
+
+    const result = await axios.post('/test', 'one');
+
+    expect(layer).toHaveBeenCalledTimes(1);
+    expect(result.data).toBe('one-two-three');
+  });
+
+  it('should work with axios.request method', async () => {
+    const axios = createAxiosMock();
+
+    axios.mock.onGet('/test').reply((config: AxiosRequestConfig) => {
+      return [200, config.data * 2];
+    });
+
+    const layer = jest.fn((makeRequest, config: AxiosRequestConfig) => {
+      return makeRequest({
+        ...config,
+        data: config.data * 3 + 1,
+      });
+    });
+
+    wrapAxios(axios, layer);
+
+    const result = await axios.request({
+      url: '/test',
+      method: 'get',
+      data: 1,
+    });
+
+    expect(layer).toHaveBeenCalledTimes(1);
+    expect(result.data).toBe(8);
   });
 });
