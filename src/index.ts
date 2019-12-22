@@ -15,7 +15,7 @@ export function create(options: CreateOpts): AxiosInstance {
   return axiosInstance;
 }
 
-export { AxiosLayer, wrapAxios };
+export * from './wrap';
 export default {
   create,
 };
