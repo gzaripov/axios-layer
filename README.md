@@ -76,7 +76,7 @@ Layer should return a promise, you can omit options object in makeRequest()
 
 function that `axiosLayer.create()` use inside, allows you to apply layer on axios instance
 
-## Tesing
+## Testing
 
 check out `/test` directory in source code, there are two helpers that allows you to write unit and integration tests.
 
