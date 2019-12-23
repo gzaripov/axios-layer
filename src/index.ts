@@ -18,4 +18,5 @@ export function create(options: CreateOpts): AxiosInstance {
 export * from './wrap';
 export default {
   create,
+  wrapAxios,
 };
