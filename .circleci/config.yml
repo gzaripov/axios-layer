@@ -32,6 +32,8 @@ jobs:
       - prepare
       - run:
           command: npm test
+      - codecov/upload:
+          file: coverage/coverage-final.json
 
 workflows:
   version: 2
