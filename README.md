@@ -2,6 +2,10 @@
 
 Middleware tool for extending basic axios functionality
 
+[![npm version](https://badge.fury.io/js/axios-layer.svg)](https://badge.fury.io/js/axios-layer)
+[![CircleCI](https://circleci.com/gh/gzaripov/axios-layer.svg?style=svg)](https://circleci.com/gh/gzaripov/axios-layer)
+[![codecov](https://codecov.io/gh/gzaripov/axios-layer/branch/master/graph/badge.svg)](https://codecov.io/gh/gzaripov/axios-layer)
+
 ## Installation
 
 ```
