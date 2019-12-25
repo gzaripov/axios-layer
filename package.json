@@ -1,6 +1,6 @@
 {
   "name": "axios-layer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Axios middleware library",
   "main": "dist/axios-layer.cjs.js",
   "module": "dist/axios-layer.esm.js",
