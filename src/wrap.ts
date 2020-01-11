@@ -6,7 +6,7 @@ const METHODS_WITH_DATA = ['post', 'put', 'patch'];
 
 const createOptions = (method: string, args: any[]): Options => {
   const dataMethod = METHODS_WITH_DATA.includes(method);
-  const optionsIndex = dataMethod ? 1 : args.length - 1;
+  const optionsIndex = dataMethod ? 2 : args.length - 1;
   const opts = typeof args[optionsIndex] === 'object' ? args[optionsIndex] : {};
 
   if (method !== 'request' && !opts.method) {

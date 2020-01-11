@@ -87,7 +87,7 @@ describe('Axios Wrap', () => {
     expect(layerTwo).toHaveBeenCalledTimes(1);
   });
 
-  it('should work with data in post request', async () => {
+  it('should work with string data in post request', async () => {
     const axios = createAxiosMock();
 
     axios.mock.onPost('/test').reply((config: AxiosRequestConfig) => {
@@ -104,6 +104,28 @@ describe('Axios Wrap', () => {
     wrapAxios(axios, layer);
 
     const result = await axios.post('/test', 'one');
+
+    expect(layer).toHaveBeenCalledTimes(1);
+    expect(result.data).toBe('one-two-three');
+  });
+
+  it('should work with object data in post request', async () => {
+    const axios = createAxiosMock();
+
+    axios.mock.onPost('/test').reply((config: AxiosRequestConfig) => {
+      return [200, `${JSON.parse(config.data).number}-three`];
+    });
+
+    const layer = jest.fn((makeRequest, config: AxiosRequestConfig) => {
+      return makeRequest({
+        ...config,
+        data: { number: `${config.data.number}-two` },
+      });
+    });
+
+    wrapAxios(axios, layer);
+
+    const result = await axios.post('/test', { number: 'one' });
 
     expect(layer).toHaveBeenCalledTimes(1);
     expect(result.data).toBe('one-two-three');
