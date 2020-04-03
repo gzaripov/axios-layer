@@ -8,7 +8,7 @@ export type CreateOpts = {
   axiosInstance?: AxiosInstance;
 };
 
-type ExtendableAxios = AxiosInstance & {
+export type ExtendableAxios = AxiosInstance & {
   extend: {
     (...layers: AxiosLayer[]): ExtendableAxios;
     (config: AxiosRequestConfig): ExtendableAxios;

@@ -12,11 +12,11 @@ export default {
       throwOnWarning: true,
       throwOnError: true,
     }),
+    typescript(),
     resolve({
       resolveOnly: ['deepmerge'],
     }),
     commonjs(),
-    typescript(),
   ],
   output: [
     {
