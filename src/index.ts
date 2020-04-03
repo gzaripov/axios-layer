@@ -1,7 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-// @ts-ignore
-import { deepMerge } from 'axios/lib/utils';
-import { wrapAxios, AxiosLayer, extendAxios } from './wrap';
+import deepmerge from 'deepmerge';
+import { wrapAxios, AxiosLayer, extendAxios, Options } from './wrap';
 
 export type CreateOpts = {
   layers: AxiosLayer[];
@@ -21,7 +20,7 @@ function addExtendMethod(axiosInstance: AxiosInstance): ExtendableAxios {
     if (typeof args[0] === 'object') {
       const config: AxiosRequestConfig = args[0];
       const extendedAxios = extendAxios(axiosInstance, (makeRequest, options) =>
-        makeRequest(deepMerge(config, options)),
+        makeRequest(deepmerge<Options>(config, options)),
       );
 
       return addExtendMethod(extendedAxios);

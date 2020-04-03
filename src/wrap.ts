@@ -1,6 +1,6 @@
 import axios, { AxiosRequestConfig, AxiosInstance } from 'axios';
 
-type Options = AxiosRequestConfig & { url: string; method: string; toArgs: () => any[] };
+export type Options = AxiosRequestConfig & { url: string; method: string; toArgs: () => any[] };
 
 const METHODS_WITH_DATA = ['post', 'put', 'patch'];
 
