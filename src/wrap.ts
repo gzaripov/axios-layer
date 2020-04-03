@@ -1,4 +1,4 @@
-import { AxiosRequestConfig, AxiosInstance } from 'axios';
+import axios, { AxiosRequestConfig, AxiosInstance } from 'axios';
 
 type Options = AxiosRequestConfig & { url: string; method: string; toArgs: () => any[] };
 
@@ -37,11 +37,12 @@ type RemoveCallableKeys<Type> = { [Key in keyof Type]: Type[Key] extends Functio
 type CallableKeys<Type> = keyof Pick<Type, RemoveCallableKeys<Type>[keyof Type]>;
 
 function wrapAxiosMethod(
-  axios: AxiosInstance,
+  sourceAxiosInstance: AxiosInstance,
+  targetAxiosInstance: AxiosInstance,
   method: CallableKeys<AxiosInstance>,
   layerFn: AxiosLayer,
 ) {
-  const requestMethod = axios[method] as (...args: any[]) => Promise<any>;
+  const requestMethod = sourceAxiosInstance[method] as (...args: any[]) => Promise<any>;
 
   const wrappedRequest = async (...args: any[]) => {
     const options = createOptions(method, args);
@@ -54,7 +55,11 @@ function wrapAxiosMethod(
 
   // @ts-ignore
   // eslint-disable-next-line no-param-reassign
-  axios[method] = wrappedRequest;
+  targetAxiosInstance[method] = wrappedRequest;
+}
+
+function cloneAxios(axiosInstance: AxiosInstance) {
+  return axios.create(axiosInstance.defaults);
 }
 
 const AXIOS_METHODS = ['request', 'get', 'delete', 'head', 'post', 'put', 'patch'] as const;
@@ -64,6 +69,19 @@ export type AxiosLayer = (
   options: Options,
 ) => Promise<any>;
 
-export function wrapAxios(axios: AxiosInstance, layer: AxiosLayer) {
-  AXIOS_METHODS.forEach((method) => wrapAxiosMethod(axios, method, layer));
+export function wrapAxios(axiosInstance: AxiosInstance, ...layers: AxiosLayer[]) {
+  layers.forEach((layer) =>
+    AXIOS_METHODS.forEach((method) => wrapAxiosMethod(axiosInstance, axiosInstance, method, layer)),
+  );
+}
+
+export function extendAxios(axiosInstance: AxiosInstance, ...layers: AxiosLayer[]) {
+  const axiosClone = cloneAxios(axiosInstance);
+
+  layers.reduce((instance, layer) => {
+    AXIOS_METHODS.forEach((method) => wrapAxiosMethod(instance, axiosClone, method, layer));
+    return axiosClone;
+  }, axiosInstance);
+
+  return axiosClone;
 }

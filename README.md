@@ -65,6 +65,34 @@ Options:
 | _config_        | `AxiosRequestConfig` | Axios Config for creating new instance, peer axios dependency is used                                                                 | `undefined`                    |
 | _axiosInstance_ | `AxiosInstance`      | Axios Instance (to create instance use axios.create() method), peer axios dependency will be used by default to create axios instance | `axios.create(options.config)` |
 
+It returns ExtendableAxios, AxiosInstance with additional extend function on it:
+
+```typescript
+type ExtendableAxios = AxiosInstance & {
+  extend: {
+    (...layers: AxiosLayer[]): ExtendableAxios;
+    (config: AxiosRequestConfig): ExtendableAxios;
+  };
+};
+```
+
+You can create child instance but with some new functionality or with new AxioreRequestConfig
+
+```typescript
+const transport = create({
+  layers: [],
+});
+
+const childTransport = transport.extend({
+  headers: {
+    'x-test-header': '123',
+  },
+});
+
+transport.get('/test') // wont have x-test-header
+childTransport.get('/test') // will have x-test-header
+```
+
 ### AxiosLayer
 
 ```typescript
@@ -76,9 +104,13 @@ type AxiosLayer = (
 
 Layer should return a promise, you can omit options object in makeRequest()
 
-### wrapAxios(axios, layer)
+### wrapAxios(axios, ...layers)
 
-function that `axiosLayer.create()` use inside, allows you to apply layer on axios instance
+function that `axiosLayer.create()` use inside, allows you to apply layers on axios instance
+
+### extendAxios(axios, ...layers)
+
+same as wrap `wrapAxios` but doesn't mutate axios instance
 
 ## Testing
 
