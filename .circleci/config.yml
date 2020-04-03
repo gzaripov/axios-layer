@@ -19,15 +19,29 @@ jobs:
   build:
     working_directory: ~/axios-layer
     docker:
-      - image: circleci/node:10
+      - image: circleci/node:12
     steps:
       - prepare
       - run: npm run build
+      - run:
+          name: release
+          command: npm run semantic-release || true
 
   test-node-10:
     working_directory: ~/axios-layer
     docker:
       - image: circleci/node:10
+    steps:
+      - prepare
+      - run:
+          command: npm test
+      - codecov/upload:
+          file: coverage/coverage-final.json
+
+  test-node-12:
+    working_directory: ~/axios-layer
+    docker:
+      - image: circleci/node:12
     steps:
       - prepare
       - run:
