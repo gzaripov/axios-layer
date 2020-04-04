@@ -1,10 +1,12 @@
 import axios, { AxiosRequestConfig, AxiosInstance } from 'axios';
 
-export type Options = AxiosRequestConfig & { url: string; method: string; toArgs: () => any[] };
+export type AxiosConfig<T = {}> = AxiosRequestConfig & T;
+
+export type Options<T> = AxiosConfig<T> & { url: string; method: string; toArgs: () => any[] };
 
 const METHODS_WITH_DATA = ['post', 'put', 'patch'];
 
-const createOptions = (method: string, args: any[]): Options => {
+const createOptions = <T>(method: string, args: any[]): Options<T> => {
   const dataMethod = METHODS_WITH_DATA.includes(method);
   const optionsIndex = dataMethod ? 2 : args.length - 1;
   const opts = typeof args[optionsIndex] === 'object' ? args[optionsIndex] : {};
@@ -36,18 +38,18 @@ const createOptions = (method: string, args: any[]): Options => {
 type RemoveCallableKeys<Type> = { [Key in keyof Type]: Type[Key] extends Function ? Key : never };
 type CallableKeys<Type> = keyof Pick<Type, RemoveCallableKeys<Type>[keyof Type]>;
 
-function wrapAxiosMethod(
+function wrapAxiosMethod<T>(
   sourceAxiosInstance: AxiosInstance,
   targetAxiosInstance: AxiosInstance,
   method: CallableKeys<AxiosInstance>,
-  layerFn: AxiosLayer,
+  layerFn: AxiosLayer<T>,
 ) {
   const requestMethod = sourceAxiosInstance[method] as (...args: any[]) => Promise<any>;
 
   const wrappedRequest = async (...args: any[]) => {
-    const options = createOptions(method, args);
+    const options = createOptions<T>(method, args);
 
-    const makeRequest = (updatedOpts?: Options) =>
+    const makeRequest = (updatedOpts?: Options<T>) =>
       requestMethod(...(updatedOpts || options).toArgs());
 
     return layerFn(makeRequest, options);
@@ -64,18 +66,18 @@ function cloneAxios(axiosInstance: AxiosInstance) {
 
 const AXIOS_METHODS = ['request', 'get', 'delete', 'head', 'post', 'put', 'patch'] as const;
 
-export type AxiosLayer = (
-  makeRequest: (options?: Options) => Promise<any>,
-  options: Options,
+export type AxiosLayer<T = unknown> = (
+  makeRequest: (options?: Options<T>) => Promise<any>,
+  options: Options<T>,
 ) => Promise<any>;
 
-export function wrapAxios(axiosInstance: AxiosInstance, ...layers: AxiosLayer[]) {
+export function wrapAxios<T = unknown>(axiosInstance: AxiosInstance, ...layers: AxiosLayer<T>[]) {
   layers.forEach((layer) =>
     AXIOS_METHODS.forEach((method) => wrapAxiosMethod(axiosInstance, axiosInstance, method, layer)),
   );
 }
 
-export function extendAxios(axiosInstance: AxiosInstance, ...layers: AxiosLayer[]) {
+export function extendAxios<T = unknown>(axiosInstance: AxiosInstance, ...layers: AxiosLayer<T>[]) {
   const axiosClone = cloneAxios(axiosInstance);
 
   layers.reduce((instance, layer) => {
