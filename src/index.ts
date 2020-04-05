@@ -1,10 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 import deepmerge from 'deepmerge';
-import { wrapAxios, AxiosLayer, extendAxios, AxiosConfig, Options } from './wrap';
+import { wrapAxios, AxiosLayer, extendAxios, AxiosConfig } from './wrap';
 
 export type CreateOpts<T = unknown> = {
   layers: AxiosLayer<T>[];
-  config?: AxiosConfig<T>;
+  config?: AxiosConfig;
   axiosInstance?: AxiosInstance;
 };
 
@@ -15,18 +15,27 @@ export type ExtendableAxios<T = unknown> = AxiosInstance & {
   };
 };
 
+const DEEP_MERGE_PROPS = ['headers', 'auth', 'proxy'] as const;
+
+export function createExtendConfigLayer<T>(config: AxiosConfig<T>): AxiosLayer<T> {
+  return (makeRequest, options) => {
+    const result = { ...config, ...options };
+
+    DEEP_MERGE_PROPS.forEach((prop) => {
+      if (config[prop] && options[prop]) {
+        result[prop] = deepmerge(config[prop], options[prop]);
+      }
+    });
+
+    return makeRequest(result);
+  };
+}
+
 function addExtendMethod<T>(axiosInstance: AxiosInstance): ExtendableAxios<T> {
   const extend = (...args: any[]) => {
-    if (typeof args[0] === 'object') {
-      const config: AxiosConfig<T> = args[0];
-      const extendedAxios = extendAxios(axiosInstance, (makeRequest, options) =>
-        makeRequest(deepmerge<Options<T>>(config, options as Partial<Options<T>>)),
-      );
+    const layers = typeof args[0] === 'object' ? [createExtendConfigLayer(args[0])] : args;
 
-      return addExtendMethod<T>(extendedAxios);
-    }
-
-    const extendedAxios = extendAxios(axiosInstance, ...args);
+    const extendedAxios = extendAxios(axiosInstance, ...layers);
 
     return addExtendMethod<T>(extendedAxios);
   };
@@ -34,14 +43,12 @@ function addExtendMethod<T>(axiosInstance: AxiosInstance): ExtendableAxios<T> {
   return Object.assign(axiosInstance, { extend });
 }
 
-type NoInfer<T> = [T][T extends any ? 0 : never];
-
-export function create<T>(options: CreateOpts<NoInfer<T>>) {
+export function create<T>(options: CreateOpts<T>) {
   const { layers, config, axiosInstance = axios.create(config) } = options;
 
   layers.forEach((layer) => wrapAxios(axiosInstance, layer));
 
-  return addExtendMethod<NoInfer<T>>(axiosInstance);
+  return addExtendMethod<T>(axiosInstance);
 }
 
 export * from './wrap';

@@ -49,8 +49,10 @@ function wrapAxiosMethod<T>(
   const wrappedRequest = async (...args: any[]) => {
     const options = createOptions<T>(method, args);
 
-    const makeRequest = (updatedOpts?: Options<T>) =>
-      requestMethod(...(updatedOpts || options).toArgs());
+    const makeRequest = (updatedOpts?: Options<T>) => {
+      updatedOpts?.toArgs(); // ?
+      return requestMethod(...(updatedOpts || options).toArgs());
+    };
 
     return layerFn(makeRequest, options);
   };

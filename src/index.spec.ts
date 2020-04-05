@@ -46,20 +46,18 @@ describe('Axios Create', () => {
       },
     });
 
-    const testServer = await createTestServer((req, res) => {
-      Object.entries(req.headers).forEach(([name, value]) => value && res.setHeader(name, value));
-      res.end();
-    });
+    const testServer = await createTestServer();
 
     const response = await testServer.runTask(() => transport.get(`${testServer.url}/test`));
     const childResponse = await testServer.runTask(() =>
       childTransport.get(`${testServer.url}/test`),
     );
 
-    expect(response.headers['x-test-header']).toBe('1');
-    expect(response.headers['x-test-header-2']).toBe('2');
-    expect(childResponse.headers['x-test-header']).toBe('123');
-    expect(childResponse.headers['x-test-header-2']).toBe('2');
+    expect(response.config.headers['x-test-header']).toBe('1');
+    expect(response.config.headers['x-test-header-2']).toBe('2');
+
+    expect(childResponse.config.headers['x-test-header']).toBe('123');
+    expect(childResponse.config.headers['x-test-header-2']).toBe('2');
   });
 
   it('.extend shoud work with one layer', async () => {
@@ -76,18 +74,15 @@ describe('Axios Create', () => {
       }),
     );
 
-    const testServer = await createTestServer((req, res) => {
-      Object.entries(req.headers).forEach(([name, value]) => value && res.setHeader(name, value));
-      res.end();
-    });
+    const testServer = await createTestServer();
 
     const response = await testServer.runTask(() => transport.get(`${testServer.url}/test`));
     const childResponse = await testServer.runTask(() =>
       childTransport.get(`${testServer.url}/test`),
     );
 
-    expect(response.headers['x-test-header']).not.toBeDefined();
-    expect(childResponse.headers['x-test-header']).toBe('123');
+    expect(response.config.headers['x-test-header']).not.toBeDefined();
+    expect(childResponse.config.headers['x-test-header']).toBe('123');
   });
 
   it('.extend shoud work with several layers', async () => {
@@ -113,20 +108,17 @@ describe('Axios Create', () => {
         }),
     );
 
-    const testServer = await createTestServer((req, res) => {
-      Object.entries(req.headers).forEach(([name, value]) => value && res.setHeader(name, value));
-      res.end();
-    });
+    const testServer = await createTestServer();
 
     const response = await testServer.runTask(() => transport.get(`${testServer.url}/test`));
     const childResponse = await testServer.runTask(() =>
       childTransport.get(`${testServer.url}/test`),
     );
 
-    expect(response.headers['x-test-header']).not.toBeDefined();
+    expect(response.config.headers['x-test-header']).not.toBeDefined();
 
-    expect(childResponse.headers['x-test-header']).toBe('123');
-    expect(childResponse.headers['x-test-header-3']).toBe('1234');
+    expect(childResponse.config.headers['x-test-header']).toBe('123');
+    expect(childResponse.config.headers['x-test-header-3']).toBe('1234');
   });
 
   it('.extend shoud return intance with .extend', async () => {
@@ -153,19 +145,93 @@ describe('Axios Create', () => {
         }),
       );
 
-    const testServer = await createTestServer((req, res) => {
-      Object.entries(req.headers).forEach(([name, value]) => value && res.setHeader(name, value));
-      res.end();
-    });
+    const testServer = await createTestServer();
 
     const response = await testServer.runTask(() => transport.get(`${testServer.url}/test`));
     const childResponse = await testServer.runTask(() =>
       childTransport.get(`${testServer.url}/test`),
     );
 
-    expect(response.headers['x-test-header']).not.toBeDefined();
+    expect(response.config.headers['x-test-header']).not.toBeDefined();
 
-    expect(childResponse.headers['x-test-header']).toBe('123');
-    expect(childResponse.headers['x-test-header-3']).toBe('1234');
+    expect(childResponse.config.headers['x-test-header']).toBe('123');
+    expect(childResponse.config.headers['x-test-header-3']).toBe('1234');
+  });
+
+  it('.extend shoud not deepmerge custom params', async () => {
+    const testObject = {
+      a: 2,
+      test() {
+        return this.a;
+      },
+    };
+
+    const transport = create<{ testObject: typeof testObject }>({
+      layers: [],
+    })
+      .extend((makeRequest, options) => {
+        return makeRequest({
+          ...options,
+          headers: {
+            ...options.headers,
+            'x-test-header': options.testObject === testObject,
+          },
+        });
+      })
+      .extend({
+        testObject,
+      });
+
+    const testServer = await createTestServer();
+
+    const response = await testServer.runTask(() => transport.get(`${testServer.url}/test`));
+
+    expect(response.config.headers['x-test-header']).toBe(true);
+  });
+
+  it('.extend shoud merge headers', async () => {
+    const transport = create({
+      layers: [],
+      config: {
+        headers: {
+          'x-test-header-1': '1',
+          'x-test-header-2': '1',
+          'x-test-header-3': '1',
+        },
+      },
+    });
+
+    const childTransport = transport.extend({
+      headers: {
+        'x-test-header-1': '2',
+        'x-test-header-2': '2',
+      },
+    });
+
+    const testServer = await createTestServer();
+
+    const response = await testServer.runTask(() =>
+      transport.get(`${testServer.url}/test`, {
+        headers: {
+          'x-test-header-1': '3',
+        },
+      }),
+    );
+
+    expect(response.config.headers['x-test-header-1']).toBe('3');
+    expect(response.config.headers['x-test-header-2']).toBe('1');
+    expect(response.config.headers['x-test-header-3']).toBe('1');
+
+    const childResponse = await testServer.runTask(() =>
+      childTransport.get(`${testServer.url}/test`, {
+        headers: {
+          'x-test-header-1': '3',
+        },
+      }),
+    );
+
+    expect(childResponse.config.headers['x-test-header-1']).toBe('3');
+    expect(childResponse.config.headers['x-test-header-2']).toBe('2');
+    expect(childResponse.config.headers['x-test-header-3']).toBe('1');
   });
 });
