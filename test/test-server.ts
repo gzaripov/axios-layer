@@ -1,13 +1,18 @@
 import http from 'http';
 import getPort from 'get-port';
 
-const defaultRequestListener: http.RequestListener = (_, res) => {
+export const okRequestListener: http.RequestListener = (_, res) => {
   res.writeHead(200);
   res.end();
 };
 
+export const errorRequestListener: http.RequestListener = (_, res) => {
+  res.writeHead(503);
+  res.end();
+};
+
 export default async function createTestServer(
-  requestListener: http.RequestListener = defaultRequestListener,
+  requestListener: http.RequestListener = okRequestListener,
 ) {
   const instance = http.createServer(requestListener);
 

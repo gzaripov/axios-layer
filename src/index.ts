@@ -52,6 +52,7 @@ export function create<T>(options: CreateOpts<T>) {
 }
 
 export * from './wrap';
+export * from './layers';
 export default {
   create,
   wrapAxios,
